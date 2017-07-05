@@ -6,15 +6,15 @@
 /*   By: gmonein <gmonein@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 06:10:07 by gmonein           #+#    #+#             */
-/*   Updated: 2017/07/05 21:02:14 by angavrel         ###   ########.fr       */
+/*   Updated: 2017/07/05 23:57:52 by angavrel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef WOLF_H
 # define WOLF_H
 
-# define WIN_W		1200.0f
-# define WIN_H		800.0f
+# define WIN_W		1200
+# define WIN_H		800
 # define D_PAS		0.075f
 # define R_PAS		0.05f
 

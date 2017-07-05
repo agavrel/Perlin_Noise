@@ -6,7 +6,7 @@
 /*   By: gmonein <gmonein@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/02/09 15:59:27 by gmonein           #+#    #+#             */
-/*   Updated: 2017/07/05 21:03:08 by angavrel         ###   ########.fr       */
+/*   Updated: 2017/07/06 00:07:14 by angavrel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,11 +25,13 @@ static void	ft_swap(int *a, int *b)
 /****************/
 
 
-void perlin_init(int *p, float *gx, float *gy, int size, unsigned seed) {
-    int i;
-    srand(seed);
+void perlin_init(int *p, float *gx, float *gy, int size)
+{
+    int			i;
+	unsigned	seed;
+	int			j;
 
-		write(1, "bbb\n", 4);
+    srand(seed);
 	i = -1;
 	while (++i < size)
         p[i] = i & 0xff;
@@ -37,7 +39,7 @@ void perlin_init(int *p, float *gx, float *gy, int size, unsigned seed) {
 	i = -1;
     while (++i < size)
 	{
-        int j = rand() % size;
+        j = rand() % size;
 		ft_swap(&p[i], &p[j]);
     }
     // Precompute table of gradients
@@ -71,7 +73,6 @@ float perlin_get(int *p, float *gx, float *gy, float x, float y) {
     float tx1 = tx0 - 1;
     float ty0 = y - floorf(y);
     float ty1 = ty0 - 1;
-
 
     float v00 = gx[q00]*tx0 + gy[q00]*ty0;
     float v01 = gx[q01]*tx1 + gy[q01]*ty0;
@@ -113,6 +114,100 @@ static void	put_pix(int *pixels, int clr, int x, int y)
 }
 
 
+union u_color
+{
+	int hex;
+	struct
+	{
+		char r;
+		char g;
+		char b;
+		char a;
+	};
+};
+
+
+/*
+lol.color = 0xffff00ff;
+
+
+lol.r = 0xff
+*/
+
+static unsigned ft_fclamp(float f)
+{
+	if (f > 0xff)
+		return (0xff);
+	else if (f < 0)
+		return (0);
+	else
+		return (round(f));
+}
+
+
+#define noiseWidth 128
+#define noiseHeight 128
+
+static void generateNoise(double noise[noiseHeight][noiseWidth])
+{
+	for (int y = 0; y < noiseHeight; y++)
+		for (int x = 0; x < noiseWidth ; x++)
+		{
+			noise[y][x] = (rand() % 32768) / 32768.0;
+		}
+}
+
+static double smoothNoise(double x, double y)
+{
+	double noise[noiseHeight][noiseWidth];
+   //get fractional part of x and y
+   double fractX = x - (int)(x);
+   double fractY = y - (int)(y);
+
+	generateNoise(noise);
+   //wrap around
+   int x1 = ((int)x + noiseWidth) % noiseWidth;
+   int y1 = ((int)y + noiseHeight) % noiseHeight;
+
+   //neighbor values
+   int x2 = (x1 + noiseWidth - 1) % noiseWidth;
+   int y2 = (y1 + noiseHeight - 1) % noiseHeight;
+
+   //smooth the noise with bilinear interpolation
+   double value = 0.0;
+   value += fractX     * fractY     * noise[y1][x1];
+   value += (1 - fractX) * fractY     * noise[y1][x2];
+   value += fractX     * (1 - fractY) * noise[y2][x1];
+   value += (1 - fractX) * (1 - fractY) * noise[y2][x2];
+
+   return value;
+}
+
+static double turbulence(double x, double y, double size)
+{
+  double value = 0.0, initialSize = size;
+
+  while(size >= 1)
+  {
+    value += smoothNoise(x / size, y / size) * size;
+    size /= 2.0;
+  }
+
+  return(128.0 * value / initialSize);
+}
+
+static unsigned perlin_color(float f, int y, int x)
+{
+//	const unsigned r = ft_fclamp(f / 4);
+//	const unsigned g = ft_fclamp(f);
+//	const unsigned b = ft_fclamp(f * 4);
+
+	const char color = (char)(turbulence(x, y, 64));
+//	return (r << 16 | g << 8 | b);
+//	return (((int)(f * 0x10000) & 0xff0000) | ((int)(f * 16 * 0x100) & 0xff00) | ((int)(f * 4) & 0xff));
+	return (color << 16 | color << 8 | color);
+}
+
 static void perlin(t_env *env)
 {
     int tx = 2;
@@ -123,11 +218,12 @@ static void perlin(t_env *env)
     static float gy[512];
     static int p[512];
 	int	color;
+	union u_color lod;
 	int		x;
 	int		y;
 
 	if (!initted) {
-        perlin_init(p, gx, gy, 512, 1);
+        perlin_init(p, gx, gy, 256);
         initted = 1;
     }
 	y = -1;
@@ -140,10 +236,16 @@ static void perlin(t_env *env)
 			float y_field = (y + (ty / 2.0)) / (env->mod1 << 1);
 	//		write(1, "a\n", 2);
 			f = perlin_get(p, gx, gy, x_field, y_field);
-			f = sinf(f * 64) * 128 + 127;
-	//	color = (((int)f << 16) | ((int)f << 8) | (int)f);
-			color = ((f * 0x10000) + (f * 0x100) + f);
-			put_pix(env->pixels, color, x, y);
+			f = cosf(f * 56) * 127;
+			f += 127;
+			if (!x && !y)
+				printf("%f\n", f);
+			lod.r = (char)(f * 0xffff) & 0xff;
+			lod.g = (char)(f * 0xff) & 0xff;
+			lod.b = (char)(f) & 0xff;
+			//color = (((int)f << 16) | ((int)f << 8) | (int)f);
+
+			put_pix(env->pixels, perlin_color(f, y_field, x_field), x, y);
 		//	pixels[y*screen->w+x] = px;
 
 

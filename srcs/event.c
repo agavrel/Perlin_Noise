@@ -6,7 +6,7 @@
 /*   By: gmonein <gmonein@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/02/09 15:59:27 by gmonein           #+#    #+#             */
-/*   Updated: 2017/07/05 21:00:44 by angavrel         ###   ########.fr       */
+/*   Updated: 2017/07/05 22:29:17 by angavrel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -121,4 +121,6 @@ void		handle_events(t_env *env)
 		env->mod1++;
 	if (env->key[SDL_SCANCODE_E] == 1 && env->mod1)
 		env->mod1--;
+	//if (env->key[SDL_ESC] == 1)
+		//exit(1);
 }

@@ -6,7 +6,7 @@
 /*   By: gmonein <gmonein@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 06:10:07 by gmonein           #+#    #+#             */
-/*   Updated: 2017/07/04 16:49:35 by angavrel         ###   ########.fr       */
+/*   Updated: 2017/07/04 22:47:30 by angavrel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,6 +110,7 @@ typedef struct		s_env
 	SDL_Cursor		*cursor;
 	SDL_Renderer	*render;
 	SDL_Texture		*texture;
+	SDL_Surface		*screen;
 	int				*pixels;
 	pthread_t		**thread;
 	t_args			*args;

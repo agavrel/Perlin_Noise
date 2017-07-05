@@ -6,7 +6,7 @@
 /*   By: gmonein <gmonein@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/02/09 15:59:27 by gmonein           #+#    #+#             */
-/*   Updated: 2017/07/05 17:49:34 by angavrel         ###   ########.fr       */
+/*   Updated: 2017/07/05 21:03:08 by angavrel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,14 +24,15 @@ static void	ft_swap(int *a, int *b)
 
 /****************/
 
-/*
+
 void perlin_init(int *p, float *gx, float *gy, int size, unsigned seed) {
     int i;
     srand(seed);
 
+		write(1, "bbb\n", 4);
 	i = -1;
 	while (++i < size)
-        p[i] = i;
+        p[i] = i & 0xff;
     // Randomly swap values
 	i = -1;
     while (++i < size)
@@ -53,7 +54,7 @@ static inline int perlin_grab_q(int *p, int x, int y)
     return (p[(y + p[x & 0xff]) & 0xff]); // now need to protect against seg fault by insuring in range of table
 }
 
-float perlin_get(int *p, float *gx, float *gy, int size, float x, float y) {
+float perlin_get(int *p, float *gx, float *gy, float x, float y) {
     int qx0 = (int)floorf(x);
     int qx1 = qx0 + 1;
     int qy0 = (int)floorf(y);
@@ -71,6 +72,7 @@ float perlin_get(int *p, float *gx, float *gy, int size, float x, float y) {
     float ty0 = y - floorf(y);
     float ty1 = ty0 - 1;
 
+
     float v00 = gx[q00]*tx0 + gy[q00]*ty0;
     float v01 = gx[q01]*tx1 + gy[q01]*ty0;
     float v10 = gx[q10]*tx0 + gy[q10]*ty1;
@@ -84,7 +86,7 @@ float perlin_get(int *p, float *gx, float *gy, int size, float x, float y) {
     return (v0 - wy * (v0 - v1));
 }
 
-*/
+
 
 /****************/
 
@@ -110,22 +112,22 @@ static void	put_pix(int *pixels, int clr, int x, int y)
 	pixels[(int)(WIN_W) * y + x] = clr;
 }
 
-/*
+
 static void perlin(t_env *env)
 {
     int tx = 2;
     int ty = 1; // standard perlin values for tx and ty
 	float f;
     static int initted = 0;
-    static float gx[256];
-    static float gy[256];
-    static int p[256];
+    static float gx[512];
+    static float gy[512];
+    static int p[512];
 	int	color;
 	int		x;
 	int		y;
 
 	if (!initted) {
-        perlin_init(p, gx, gy, 256, 1);
+        perlin_init(p, gx, gy, 512, 1);
         initted = 1;
     }
 	y = -1;
@@ -134,12 +136,12 @@ static void perlin(t_env *env)
 		x = -1;
 		while (++x < WIN_W)
 		{
-			float x_field = (x + (tx / 2.0)) / 128;
-			float y_field = (y + (ty / 2.0)) / 128;
+			float x_field = (x + (tx / 2.0)) / (env->mod1 << 1); // increase or decrease divide to have more or less shapes
+			float y_field = (y + (ty / 2.0)) / (env->mod1 << 1);
 	//		write(1, "a\n", 2);
-			f = perlin_get(p, gx, gy, 256, x_field, y_field);
-			f = sinf(f * 64) * 128 + 128;
-		//	color = (((int)f << 16) | ((int)f << 8) | (int)f);
+			f = perlin_get(p, gx, gy, x_field, y_field);
+			f = sinf(f * 64) * 128 + 127;
+	//	color = (((int)f << 16) | ((int)f << 8) | (int)f);
 			color = ((f * 0x10000) + (f * 0x100) + f);
 			put_pix(env->pixels, color, x, y);
 		//	pixels[y*screen->w+x] = px;
@@ -151,21 +153,21 @@ static void perlin(t_env *env)
 	}
 //	SDL_Flip(screen);
 }
-*/
+
 
 /*
 ** fade is used to smooth the shapes
 ** this formula is the original Ken Perlin one's
 */
-
+/*
 static double fade(double t)
 {
 	return (t * t * t * (t * (t * 6 - 15) + 10));
 }
 
-/*
-** linear interpolation
-*/
+
+// linear interpolation
+
 
 static double lerp(double t, double a, double b)
 {
@@ -179,10 +181,10 @@ typedef struct s_vector
 	double		z;
 }				t_vector;
 
-/*
-** handles color
-** returns originally equals to ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
-*/
+
+// handles color
+// returns originally equals to ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
+
 
 static double grad(int hash, t_vector v, t_vector u)
 {
@@ -288,19 +290,19 @@ static void perlin(t_env *env)
 		}
 	}
 }
-
+*/
 static int	global_loop(t_env *env)
 {
 	while (env->run)
 	{
-		SDL_PollEvent(&env->event);
+		SDL_WaitEvent(&env->event);
 		if (env->event.type == 256)
 			env->run = 0;
 		if (env->event.window.type == SDL_WINDOWEVENT_CLOSE
 				|| env->event.key.keysym.sym == SDLK_ESCAPE
 				|| env->event.type == SDL_QUIT)
 			env->run = 0;
-		handle_events(env);
+		handle_events(env); // cause segfault
 		perlin(env);
 		SDL_UpdateTexture(env->texture, NULL, env->pixels, (int)WIN_W << 2);
 		SDL_RenderCopy(env->render, env->texture, NULL, NULL);
@@ -325,6 +327,7 @@ int			init(t_env *env)
 	env->run = 1;
 	env->pal = 0;
 	env->blur = 1;
+	env->mod1 = 8;
 	env->color[0][0] = 0xDEE9ED;
 	env->color[0][1] = 0xC6C7CB;
 	env->color[0][2] = 0x808387;

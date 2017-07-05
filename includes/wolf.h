@@ -6,7 +6,7 @@
 /*   By: gmonein <gmonein@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/08 06:10:07 by gmonein           #+#    #+#             */
-/*   Updated: 2017/07/04 22:47:30 by angavrel         ###   ########.fr       */
+/*   Updated: 2017/07/05 21:02:14 by angavrel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -137,6 +137,7 @@ typedef struct		s_env
 	time_t			time;
 	time_t			oldtime;
 	struct tm		mytime;
+	int				mod1;
 }					t_env;
 
 void				ray_trace(t_env *e);
@@ -146,7 +147,7 @@ int					get_pixel(SDL_Surface *src, int x, int y);
 pthread_t			**malloc_thread(int count, t_args *args, void *a);
 void				redraw(t_env *env);
 short				**parsing(void);
-int					handle_events(t_env *env);
+void				handle_events(t_env *env);
 void				set_ray(t_env *env, t_ray *ray, int x);
 int					blend(unsigned char fg[4], unsigned char bg[4]);
 void				print_floor_uni(t_env *env, t_ray *ray, int x);

@@ -3,15 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   event.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gmonein <marvin@42.fr>                     +#+  +:+       +#+        */
+/*   By: gmonein <gmonein@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/02/09 15:59:27 by gmonein           #+#    #+#             */
-/*   Updated: 2017/06/05 00:14:23 by gmonein          ###   ########.fr       */
+/*   Updated: 2017/07/05 21:00:44 by angavrel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "wolf.h"
-
+/*
 static int		handle_events_a(t_env *env)
 {
 	int		act;
@@ -113,4 +113,12 @@ int				handle_events(t_env *env)
 		act = 1;
 	}
 	return ((act > 0 ? 1 : 0));
+}
+*/
+void		handle_events(t_env *env)
+{
+	if (env->key[SDL_SCANCODE_Q] == 1)
+		env->mod1++;
+	if (env->key[SDL_SCANCODE_E] == 1 && env->mod1)
+		env->mod1--;
 }

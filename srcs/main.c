@@ -6,7 +6,7 @@
 /*   By: gmonein <gmonein@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/02/09 15:59:27 by gmonein           #+#    #+#             */
-/*   Updated: 2017/07/06 00:07:14 by angavrel         ###   ########.fr       */
+/*   Updated: 2017/07/07 16:59:12 by angavrel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -144,7 +144,7 @@ static unsigned ft_fclamp(float f)
 		return (round(f));
 }
 
-
+/*
 #define noiseWidth 128
 #define noiseHeight 128
 
@@ -207,7 +207,7 @@ static unsigned perlin_color(float f, int y, int x)
 //	return (((int)(f * 0x10000) & 0xff0000) | ((int)(f * 16 * 0x100) & 0xff00) | ((int)(f * 4) & 0xff));
 	return (color << 16 | color << 8 | color);
 }
-
+*/
 static void perlin(t_env *env)
 {
     int tx = 2;
@@ -236,16 +236,14 @@ static void perlin(t_env *env)
 			float y_field = (y + (ty / 2.0)) / (env->mod1 << 1);
 	//		write(1, "a\n", 2);
 			f = perlin_get(p, gx, gy, x_field, y_field);
-			f = cosf(f * 56) * 127;
+			f = sinf(cosf(f * 56) + 1 / (f * cos(1/2))) * 127;
 			f += 127;
 			if (!x && !y)
 				printf("%f\n", f);
-			lod.r = (char)(f * 0xffff) & 0xff;
-			lod.g = (char)(f * 0xff) & 0xff;
-			lod.b = (char)(f) & 0xff;
-			//color = (((int)f << 16) | ((int)f << 8) | (int)f);
+			color = ft_fclamp(f / 2) << 16 |  ft_fclamp(f) << 8 |  ft_fclamp(f * 4);
+		//	color = (((int)lod.r << 16) | ((int)lod.g << 8) | (int)lod.b);
 
-			put_pix(env->pixels, perlin_color(f, y_field, x_field), x, y);
+			put_pix(env->pixels, color, x, y);
 		//	pixels[y*screen->w+x] = px;
 
 

@@ -6,7 +6,7 @@
 /*   By: gmonein <gmonein@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/02/09 15:59:27 by gmonein           #+#    #+#             */
-/*   Updated: 2017/07/08 02:36:06 by angavrel         ###   ########.fr       */
+/*   Updated: 2017/07/09 00:32:14 by angavrel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -214,20 +214,27 @@ static unsigned perlin_color(float f, int y, int x)
 */
 
 #include <stdint.h>
-double noise[WIN_H][WIN_W]; //the noise array
+#define WIN_Z WIN_H / 3
+//double noise[WIN_Z][WIN_H][WIN_W]; //the noise array
+double noise[WIN_H][WIN_W];
 
 void generateNoise()
 {
 	int			x;
 	int			y;
+	//int			z;
 
-	y = -1;
-	while (++y < WIN_H)
-	{
-		x = -1;
-		while (++x < WIN_W)
-    		noise[y][x] = (rand() % 32768) / 32768.0;
-	}
+/*	while (++z < WIN_Z)
+	{*/
+		y = -1;
+		while (++y < WIN_H)
+		{
+			x = -1;
+			while (++x < WIN_W)
+				noise[y][x] = (rand() % 32768) / 32768.0;
+	    		//noise[z][y][x] = (rand() % 32768) / 32768.0;
+		}
+	//}
 }
 
 /*
@@ -237,28 +244,32 @@ void generateNoise()
 ** fractional part, you can make it smoother.
 */
 
-double smoothNoise(double x, double y)
+double smoothNoise(double x, double y)//, double z)
 {
    //get fractional part of x and y
    double fractX = x - (int)x;
    double fractY = y - (int)y;
-   double value = 0.0;
+ //  double fractZ = z - (int)z;
+
 
    //wrap around
    const int x1 = ((int)x + WIN_W) % WIN_W;
    const int y1 = ((int)y + WIN_H) % WIN_H;
-
+//   const int z1 = ((int)z + WIN_Z) % WIN_Z;
    //neighbor values
    const int x2 = (x1 + WIN_W - 1) % WIN_W;
    const int y2 = (y1 + WIN_H - 1) % WIN_H;
-
+//   const int z2 = (z1 + WIN_Z - 1) % WIN_Z;
    //smooth the noise with bilinear interpolation
-   value += fractX     * fractY     * noise[y1][x1];
-   value += (1 - fractX) * fractY     * noise[y1][x2];
-   value += fractX     * (1 - fractY) * noise[y2][x1];
-   value += (1 - fractX) * (1 - fractY) * noise[y2][x2];
-
-   return (value);
+	return (noise[y1][x1] * fractX * fractY// * fractZ
+		+ noise[y1][x2] * (1 - fractX) * fractY// * fractZ
+		+ noise[y2][x1] * fractX * (1 - fractY)// * fractZ
+		+ noise[y2][x2] * (1 - fractX) * (1 - fractY)// * fractZ
+	//	+ noise[z2][y1][x1] * fractX * fractY * (1 - fractZ)
+	//	+ noise[z2][y1][x2] * (1 - fractX) * fractY * (1 - fractZ)
+	//	+ noise[z2][y2][x1] * fractX * (1 - fractY) * (1 - fractZ)
+	//	+ noise[z2][y2][x2] * (1 - fractX) * (1 - fractY) * (1 - fractZ)
+	);
 }
 
 /*
@@ -273,39 +284,154 @@ An even smaller layer is the grains of sand. Together, the sum of all these
 ** layers forms natural looking mountains.
 */
 
+//double turbulence(double x, double y, double z, int size)
 double turbulence(double x, double y, int size)
 {
   double value = 0.0;
-  const double initialSize = size;
+  const int initialSize = size; // double ?
 
   while (size >= 1)
   {
-    value += smoothNoise(x / size, y / size) * size;//smoothNoise(cos(x / size), cos(y / size)) * size;
+    value += smoothNoise(x / size, y / size/*, z / size*/) * size;//smoothNoise(cos(x / size), cos(y / size)) * size;
     size >>= 1;
   }
 
-  return(128.0 * value / initialSize);
+  return(0x80 * value / initialSize);
 }
 
+typedef struct	s_hsb
+{
+	double h;
+	double s;
+	double b;
+}				t_hsb;
 
+typedef struct	s_rgb
+{
+	double r;
+	double g;
+	double b;
+}				t_rgb;
 
+typedef struct	s_vector
+{
+	double x;
+	double y;
+	double z;
+	double w;
+}				t_vector;
+/*
+static double hue2rgb(double p, double q, double t)
+{
+	if (t < 0)
+		t += 1;
+	if (t > 1)
+		t -= 1;
+	if (t < 1/6)
+		return (p + (q - p) * 6 * t);
+	if (t < 1/2)
+		return (q);
+	if (t < 2/3)
+		return (p + (q - p) * (2/3 - t) * 6);
+	return (p);
+}
+
+t_rgb	ft_hsb2rgb(t_hsb hsb)
+{
+    t_rgb		rgb;
+	double		q;
+	double		p;
+
+    if (!hsb.s)
+    	rgb.r = rgb.g = rgb.b = hsb.b; // achromatic
+    else
+	{
+        q = hsb.b < 0.5 ? hsb.b * (1 + hsb.s) : hsb.b + hsb.s - hsb.b * hsb.s;
+        p = 2 * hsb.b - q;
+        rgb.r = round(hue2rgb(p, q, hsb.h + 1/3) * 0xff);
+        rgb.g = round(hue2rgb(p, q, hsb.h) * 0xff);
+        rgb.b = round(hue2rgb(p, q, hsb.h - 1/3) * 0xff);
+    }
+    return (rgb);
+}
+
+t_rgb	ft_hsb2rgb(t_hsb hsb)
+{
+	t_rgb		rgb;
+	t_vector	i;
+
+	i.w = (int)(hsb.h / 60);
+	i.w = (hsb.h / 60) - i.w;
+	i.x = 0xff * (hsb.b * (1 - hsb.s));
+	i.y = 0xff * (hsb.b * (1 - i.w * hsb.s));
+	i.z = 0xff * (hsb.b * (1 - (1 - i.w) * hsb.s));
+	hsb.b *= 0xff;
+	hsb.h = (int)((hsb.h) / 60);
+	if (hsb.h == 0)
+		rgb = (t_rgb) {.r = hsb.b, .g = i.z, .b = i.x};
+	else if (hsb.h == 1)
+		rgb = (t_rgb) {.r = i.y, .g = hsb.b, .b = i.x};
+	else if (hsb.h == 2)
+		rgb = (t_rgb) {.r = i.x, .g = hsb.b, .b = i.z};
+	else if (hsb.h == 3)
+		rgb = (t_rgb) {.r = i.x, .g = i.y, hsb.b};
+	else if (hsb.h == 4)
+		rgb = (t_rgb) {.r = i.z, .g = i.x, hsb.b};
+	else if (hsb.h == 5)
+		rgb = (t_rgb) {.r = hsb.b, .g = i.x, .b = i.y};
+	else
+		rgb = (t_rgb) {.r = 0, .g = 0, .b = 0};
+		printf("%d\n", rgb.r);
+		printf("%d\n", rgb.g);
+		printf("%d\n", rgb.b);
+	return (rgb);
+}
+
+int		ft_rgb2hex(t_rgb rgb)
+{
+	return ((int)rgb.r << 16 | (int)rgb.g << 8 | (int)rgb.b);
+}
+
+int		ft_hsb2hex(t_hsb hsb)
+{
+	return (ft_rgb2hex(ft_hsb2rgb(hsb)));
+}
+*/
 static void perlin(t_env *env)
 {
-	int			x;
-	int			y;
-	unsigned	color;
+	int				x;
+	int				y;
+	double z = 0;
+	unsigned		color = 0;
+//	t_hsb			color_hsb;
 
+	//color_hsb = (t_hsb) {.h = 169, .s = 1, .b = 42};
 	generateNoise();
+
 	y = -1;
 	while (++y < WIN_H)
 	{
 		x = -1;
 		while (++x < WIN_W)
 		{
-			color = (uint8_t)(turbulence(x, y, 64));//255 * smoothNoise(y / 8.0, x / 8.0));//255 * noise[y][x]);
-			color = color << 16 | color << 8 | ft_fclamp(color * 8);
+			z = (rand() % 32768) / 32768.0;
+			//printf("%f\n", z);
+			color = (uint8_t)(turbulence(x, y, env->mod1));
+			color = color << 16 | color << 8 | ft_fclamp(color * 8);//color = ft_hsb2hex(color_hsb);
+		//	color_hsb.b = (192 + (uint8_t)(turbulence(x, y, z, 32) / 4)) / 360;
+
+      	//	color = ft_hsb2hex(color_hsb);
+
+
+//			color = 192 + (uint8_t)(turbulence(x, y, z, 32));//255 * smoothNoise(y / 8.0, x / 8.0));//255 * noise[y][x]);
+	//		color = color << 16 | color << 8 | ft_fclamp(color * 8);//color = ft_hsb2hex(color_hsb);
+
 			put_pix(env->pixels, color, x, y);
+
+		//	printf("%f\n", z);
+
 		}
+
 	}
 
 }
@@ -495,6 +621,8 @@ static void perlin(t_env *env)
 */
 static int	global_loop(t_env *env)
 {
+	double z = 0;
+
 	while (env->run)
 	{
 		SDL_WaitEvent(&env->event);

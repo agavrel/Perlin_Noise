@@ -6,7 +6,7 @@
 /*   By: gmonein <gmonein@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/02/09 15:59:27 by gmonein           #+#    #+#             */
-/*   Updated: 2017/07/07 16:59:12 by angavrel         ###   ########.fr       */
+/*   Updated: 2017/07/08 02:36:06 by angavrel         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -208,6 +208,108 @@ static unsigned perlin_color(float f, int y, int x)
 	return (color << 16 | color << 8 | color);
 }
 */
+
+/*
+** http://lodev.org/cgtutor/randomnoise.html
+*/
+
+#include <stdint.h>
+double noise[WIN_H][WIN_W]; //the noise array
+
+void generateNoise()
+{
+	int			x;
+	int			y;
+
+	y = -1;
+	while (++y < WIN_H)
+	{
+		x = -1;
+		while (++x < WIN_W)
+    		noise[y][x] = (rand() % 32768) / 32768.0;
+	}
+}
+
+/*
+** When zooming in, we want something smoother. We use linear interpolation.
+** Currently the noise is an array and it's got only a discrete set of integer
+** indices pointing to its contents. By using bilinear interpolation on the
+** fractional part, you can make it smoother.
+*/
+
+double smoothNoise(double x, double y)
+{
+   //get fractional part of x and y
+   double fractX = x - (int)x;
+   double fractY = y - (int)y;
+   double value = 0.0;
+
+   //wrap around
+   const int x1 = ((int)x + WIN_W) % WIN_W;
+   const int y1 = ((int)y + WIN_H) % WIN_H;
+
+   //neighbor values
+   const int x2 = (x1 + WIN_W - 1) % WIN_W;
+   const int y2 = (y1 + WIN_H - 1) % WIN_H;
+
+   //smooth the noise with bilinear interpolation
+   value += fractX     * fractY     * noise[y1][x1];
+   value += (1 - fractX) * fractY     * noise[y1][x2];
+   value += fractX     * (1 - fractY) * noise[y2][x1];
+   value += (1 - fractX) * (1 - fractY) * noise[y2][x2];
+
+   return (value);
+}
+
+/*
+** Turbulence is what creates natural looking features out of smoothed noise.
+** The trick is to add multiple noise textures of different zooming scales.
+** An example of how this represents nature can be found in a mountain range:
+** there are very large features (the main mountains), they are very deeply
+** zoomed in noise. Then added to the mountains are smaller features:
+** multiple tops, variations in the slope, Then, at an even smaller scale,
+** there are rocks on the mountains.
+An even smaller layer is the grains of sand. Together, the sum of all these
+** layers forms natural looking mountains.
+*/
+
+double turbulence(double x, double y, int size)
+{
+  double value = 0.0;
+  const double initialSize = size;
+
+  while (size >= 1)
+  {
+    value += smoothNoise(x / size, y / size) * size;//smoothNoise(cos(x / size), cos(y / size)) * size;
+    size >>= 1;
+  }
+
+  return(128.0 * value / initialSize);
+}
+
+
+
+static void perlin(t_env *env)
+{
+	int			x;
+	int			y;
+	unsigned	color;
+
+	generateNoise();
+	y = -1;
+	while (++y < WIN_H)
+	{
+		x = -1;
+		while (++x < WIN_W)
+		{
+			color = (uint8_t)(turbulence(x, y, 64));//255 * smoothNoise(y / 8.0, x / 8.0));//255 * noise[y][x]);
+			color = color << 16 | color << 8 | ft_fclamp(color * 8);
+			put_pix(env->pixels, color, x, y);
+		}
+	}
+
+}
+/*
 static void perlin(t_env *env)
 {
     int tx = 2;
@@ -253,7 +355,7 @@ static void perlin(t_env *env)
 	}
 //	SDL_Flip(screen);
 }
-
+*/
 
 /*
 ** fade is used to smooth the shapes
